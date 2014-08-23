@@ -19,6 +19,48 @@ fi
 rm -rf /var/lib/openfire
 ln -sf /data/openfire/lib /var/lib/openfire
 
+# Do some db setup
+if [ -z "${JDBC_USERNAME}" -o -z "${JDBC_PASSWORD}" ]; then
+  echo "Please set -e JDBC_USERNAME=... and -e JDBC_PASSWORD=..."
+  exit 1
+fi
+  
+if [ -z "${DB_1_PORT_3306_TCP_ADDR}" -o -z "${DB_1_PORT_3306_TCP_PORT}" ]; then
+  echo "Please run with --link DB:DB_1"
+  exit 1
+fi
+
+cat /usr/share/openfire/resources/database/openfire_mysql.sql | mysql -u${JDBC_USERNAME} -p${JDBC_PASSWORD} -h${DB_1_PORT_3306_TCP_ADDR} -P${DB_1_PORT_3306_TCP_PORT} openfire || true
+
+cat <<__END__ > /data/openfire/etc/openfire.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<jive>
+  <setup>true</setup>
+  <adminConsole>
+    <port>9090</port>  
+    <securePort>9091</securePort> 
+  </adminConsole>  
+  <locale>en</locale>
+  <connectionProvider>
+    <className>org.jivesoftware.database.DefaultConnectionProvider</className>
+  </connectionProvider> 
+  <database>
+    <defaultProvider>
+      <driver>com.mysql.jdbc.Driver</driver> 
+      <serverURL>jdbc:mysql://${DB_1_PORT_3306_TCP_ADDR}:${DB_1_PORT_3306_TCP_PORT}/openfire?rewriteBatchedStatements=true</serverURL> 
+      <username>${JDBC_USERNAME}</username> 
+      <password>${JDBC_PASSWORD}</password> 
+      <testSQL>select 1</testSQL> 
+      <testBeforeUse>false</testBeforeUse> 
+      <testAfterUse>false</testAfterUse> 
+      <minConnections>5</minConnections> 
+      <maxConnections>25</maxConnections> 
+      <connectionTimeout>1.0</connectionTimeout>
+    </defaultProvider>
+  </database> 
+</jive>
+__END__
+
 echo "Starting openfire..."
 exec sudo -u openfire -H /usr/bin/java \
   -server \

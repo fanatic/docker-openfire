@@ -1,13 +1,8 @@
-FROM sameersbn/ubuntu:12.04.20140818
-MAINTAINER sameer@damagehead.com
+FROM sameersbn/openfire:latest
+MAINTAINER fanatic+github@gmail.com
 
-ENV OPENFIRE_VERSION 3.9.3
-RUN apt-get update && \
-    apt-get install -y openjdk-7-jre && \
-    wget "http://www.igniterealtime.org/downloadServlet?filename=openfire/openfire_${OPENFIRE_VERSION}_all.deb" -O /tmp/openfire_${OPENFIRE_VERSION}_all.deb && \
-    dpkg -i /tmp/openfire_${OPENFIRE_VERSION}_all.deb && \
-    rm -rf openfire_${OPENFIRE_VERSION}_all.deb && \
-    rm -rf /var/lib/apt/lists/* # 20140818
+RUN apt-get update
+RUN apt-get -y install mysql-client
 
 ADD start /start
 RUN chmod 755 /start
@@ -22,5 +17,6 @@ EXPOSE 7443
 EXPOSE 7777
 EXPOSE 9090
 EXPOSE 9091
+
 VOLUME ["/data"]
 CMD ["/start"]
